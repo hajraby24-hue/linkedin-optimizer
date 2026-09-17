@@ -1,0 +1,27 @@
+{
+  "full_name": "Omar Nasser",
+  "headline": "Software Engineer at Acme",
+  "about": "Hardworking team player passionate about technology and always looking for opportunities to grow.",
+  "location": "",
+  "industry": "",
+  "target_role": "data scientist",
+  "experiences": [
+    {
+      "title": "Software Engineer",
+      "company": "Acme",
+      "start_date": "",
+      "end_date": "",
+      "description": "Responsible for various tasks."
+    }
+  ],
+  "educations": [],
+  "skills": ["Python", "Excel"],
+  "certifications": [],
+  "languages": [],
+  "featured_count": 0,
+  "recommendations_count": 0,
+  "connections_count": 84,
+  "has_photo": false,
+  "has_banner": false,
+  "custom_url": ""
+}

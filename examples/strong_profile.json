@@ -1,0 +1,49 @@
+{
+  "full_name": "Layla Haddad",
+  "headline": "Senior Backend Engineer | Payments infrastructure at scale | Python, Go, Kubernetes",
+  "about": "I build payment systems that stay up on the busiest day of the year. Last year I led the migration that cut our checkout error rate from 1.9% to 0.2% while traffic tripled.\n\nI spend most of my time on the boring parts that decide whether a platform survives growth: idempotency, retries, reconciliation, and the observability that tells you which of the three failed.\n\nRecent work:\n- Rebuilt the settlement pipeline, reducing end-of-day reconciliation from 6 hours to 25 minutes.\n- Grew a team of 3 engineers into 9 across two time zones.\n- Cut infrastructure spend by 34% by moving stateless services to spot capacity.\n\nI am always happy to compare notes on payments architecture. Email me at layla@example.com.",
+  "location": "Amman, Jordan",
+  "industry": "Financial Services",
+  "target_role": "backend engineer",
+  "target_keywords": ["api", "database", "microservices", "scalability", "sql", "caching"],
+  "experiences": [
+    {
+      "title": "Senior Backend Engineer",
+      "company": "Northwind Pay",
+      "start_date": "2021-03",
+      "end_date": "",
+      "location": "Amman, Jordan",
+      "description": "- Led the microservices migration of the checkout API, cutting p99 latency from 900ms to 210ms.\n- Designed the caching layer that absorbed a 3x traffic increase with no added database capacity.\n- Rebuilt settlement reconciliation in Go, reducing the nightly run from 6 hours to 25 minutes."
+    },
+    {
+      "title": "Backend Engineer",
+      "company": "Cedar Labs",
+      "start_date": "2018-06",
+      "end_date": "2021-02",
+      "location": "Remote",
+      "description": "- Built the SQL reporting service used by 40+ internal analysts.\n- Automated the release pipeline, reducing deploy time from 45 to 7 minutes.\n- Migrated 12 legacy endpoints to a documented REST API."
+    }
+  ],
+  "educations": [
+    {
+      "school": "University of Jordan",
+      "degree": "BSc",
+      "field_of_study": "Computer Engineering",
+      "start_year": "2014",
+      "end_year": "2018"
+    }
+  ],
+  "skills": [
+    "Python", "Go", "Microservices", "PostgreSQL", "SQL", "Redis", "Caching", "Kubernetes",
+    "API Design", "Distributed Systems", "Scalability", "Observability", "Terraform",
+    "CI/CD", "Payments", "Database Design"
+  ],
+  "certifications": ["AWS Certified Solutions Architect"],
+  "languages": ["Arabic", "English"],
+  "featured_count": 2,
+  "recommendations_count": 4,
+  "connections_count": 1200,
+  "has_photo": true,
+  "has_banner": true,
+  "custom_url": "linkedin.com/in/layla-haddad"
+}
