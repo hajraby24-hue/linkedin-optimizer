@@ -1,13 +1,17 @@
-"""HTTP API around the analysis engine.
+"""HTTP API and web UI around the analysis engine.
 
 Run it with:  uvicorn linkedin_optimizer.api:app --reload
+The form is then served at / and the OpenAPI docs at /docs.
 """
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import __version__
@@ -16,11 +20,20 @@ from .models import Profile, ProfileError
 from .report import render_markdown
 from .rules import DEFAULT_RULES
 
+STATIC_DIR = Path(__file__).parent / "static"
+
 app = FastAPI(
     title="LinkedIn Optimizer",
     version=__version__,
     summary="Score a LinkedIn profile and return ranked, concrete fixes.",
 )
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+
+@app.get("/", include_in_schema=False)
+def index() -> FileResponse:
+    """The web UI: a form that posts to /analyze and renders the report."""
+    return FileResponse(STATIC_DIR / "index.html", media_type="text/html")
 
 
 class ExperienceIn(BaseModel):
