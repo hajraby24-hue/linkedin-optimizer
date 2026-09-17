@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LinkedIn Optimizer</title>
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header>
+    <h1>LinkedIn Optimizer</h1>
+    <p>املأ بيانات ملفك الشخصي واحصل على درجة من 100 مع قائمة بأهم التحسينات مرتّبة حسب أثرها.</p>
+  </header>
+
+  <main>
+    <form class="panel" id="profile-form" novalidate>
+      <fieldset>
+        <legend>الأساسيات</legend>
+        <label>
+          <span>الاسم الكامل</span>
+          <input type="text" name="full_name" autocomplete="name" />
+        </label>
+        <label>
+          <span>العنوان (Headline) — حتى 220 حرفًا</span>
+          <input type="text" name="headline" maxlength="400" />
+          <span class="hint" id="headline-count">0 حرف</span>
+        </label>
+        <label>
+          <span>نبذة (About)</span>
+          <textarea name="about"></textarea>
+          <span class="hint" id="about-count">0 حرف · 0 كلمة</span>
+        </label>
+        <div class="row">
+          <label>
+            <span>الموقع</span>
+            <input type="text" name="location" />
+          </label>
+          <label>
+            <span>المجال (Industry)</span>
+            <input type="text" name="industry" />
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>الدور المستهدف</legend>
+        <div class="row">
+          <label>
+            <span>الدور</span>
+            <input type="text" name="target_role" placeholder="backend engineer" />
+          </label>
+          <label>
+            <span>كلمات مفتاحية (مفصولة بفواصل)</span>
+            <input type="text" name="target_keywords" placeholder="api, caching, sql" />
+          </label>
+        </div>
+        <p class="hint">اترك الحقلين فارغين ولن تُحتسب قاعدة تغطية الكلمات المفتاحية في الدرجة إطلاقًا.</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>الخبرات</legend>
+        <div id="experiences"></div>
+        <button type="button" data-add="experience">+ إضافة منصب</button>
+      </fieldset>
+
+      <fieldset>
+        <legend>التعليم</legend>
+        <div id="educations"></div>
+        <button type="button" data-add="education">+ إضافة مؤهل</button>
+      </fieldset>
+
+      <fieldset>
+        <legend>المهارات والشهادات</legend>
+        <label>
+          <span>المهارات (مفصولة بفواصل)</span>
+          <textarea name="skills" placeholder="Python, SQL, Kubernetes"></textarea>
+        </label>
+        <div class="row">
+          <label>
+            <span>الشهادات (مفصولة بفواصل)</span>
+            <input type="text" name="certifications" />
+          </label>
+          <label>
+            <span>اللغات (مفصولة بفواصل)</span>
+            <input type="text" name="languages" />
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>اكتمال الملف</legend>
+        <div class="row">
+          <label>
+            <span>عدد الاتصالات</span>
+            <input type="number" name="connections_count" min="0" value="0" />
+          </label>
+          <label>
+            <span>عدد التوصيات</span>
+            <input type="number" name="recommendations_count" min="0" value="0" />
+          </label>
+        </div>
+        <div class="row">
+          <label>
+            <span>عناصر قسم Featured</span>
+            <input type="number" name="featured_count" min="0" value="0" />
+          </label>
+          <label>
+            <span>الرابط المخصّص</span>
+            <input type="text" name="custom_url" placeholder="linkedin.com/in/your-name" />
+          </label>
+        </div>
+        <div class="checks">
+          <label><input type="checkbox" name="has_photo" /> صورة شخصية</label>
+          <label><input type="checkbox" name="has_banner" /> صورة غلاف</label>
+        </div>
+      </fieldset>
+
+      <div class="actions-bar">
+        <button type="submit" class="primary" id="submit-button">حلّل الملف</button>
+        <button type="button" id="load-example">تعبئة مثال</button>
+        <button type="button" id="reset-form">تفريغ النموذج</button>
+      </div>
+    </form>
+
+    <section class="panel" id="report" aria-live="polite">
+      <p class="placeholder">النتيجة ستظهر هنا بعد التحليل.</p>
+    </section>
+  </main>
+
+  <footer>
+    التحليل يجري محليًا على الخادم الذي تشغّله بنفسك — لا تُرسل البيانات إلى أي جهة خارجية.
+    واجهة البرمجة موثّقة في <a href="/docs">‎/docs</a>، ونصوص الملاحظات بالإنجليزية كما في المحرّك.
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
