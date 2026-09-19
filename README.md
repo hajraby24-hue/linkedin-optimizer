@@ -72,6 +72,7 @@ linkedin-optimizer analyze profile.json
 # صيغ إخراج أخرى
 linkedin-optimizer analyze profile.json --format json
 linkedin-optimizer analyze profile.json --format markdown -o report.md
+linkedin-optimizer analyze profile.json --format pdf -o report.pdf
 
 # تجاوز الدور المستهدف من سطر الأوامر
 linkedin-optimizer analyze profile.json --target-role "data scientist"
@@ -110,6 +111,27 @@ open("report.md", "w").write(render_markdown(report))
 
 </div>
 
+## تصدير التقرير PDF
+
+<div dir="ltr">
+
+```bash
+pip install -e ".[pdf]"
+linkedin-optimizer analyze profile.json --format pdf -o report.pdf
+```
+
+</div>
+
+صفحة مرتّبة للطباعة أو للإرفاق مع السيرة الذاتية: الدرجة كرقم رئيسي، ثم مقياس لكل قسم (اللون يحمل الشدّة والنسبة مكتوبة بجانبه دائمًا، فلا تعتمد القراءة على اللون وحده)، ثم الإجراءات المرتّبة وكل الملاحظات.
+
+- من واجهة الويب: زر **«تحميل التقرير PDF»** أسفل النموذج.
+- من واجهة البرمجة: `POST /report.pdf` بنفس جسم `/analyze`، ويُرجع الملف كمرفق.
+- `--format pdf` يتطلّب `-o` لأن المخرَج ثنائي؛ و`--fail-under` يظل ساريًا.
+
+الحزمة الاختيارية `pdf` تضيف ReportLab مع `arabic-reshaper` و`python-bidi` حتى تُرسم الأسماء العربية موصولة وبالاتجاه الصحيح. تُستخدم أول خطّ Unicode متاح على النظام (DejaVu أو Noto أو Liberation)، وإلا يعود إلى Helvetica — وهو لا يدعم الحروف العربية، فإن كان اسمك بالعربية ثبّت أحد هذه الخطوط.
+
+بدون تثبيت الحزمة الاختيارية تعمل بقية الأداة كما هي، ويظهر خطأ واضح يذكر أمر التثبيت.
+
 ## واجهة الويب
 
 <div dir="ltr">
@@ -138,6 +160,7 @@ uvicorn linkedin_optimizer.api:app --reload
 | --- | --- | --- |
 | `/` | GET | واجهة الويب |
 | `/import` | POST | رفع أرشيف التصدير (multipart) وإرجاع بيانات الملف |
+| `/report.pdf` | POST | تحليل ملف شخصي وإرجاع التقرير كملف PDF |
 | `/health` | GET | حالة الخدمة ورقم الإصدار |
 | `/rules` | GET | قائمة القواعد وأوزانها |
 | `/analyze` | POST | تحليل ملف شخصي وإرجاع التقرير |
@@ -207,6 +230,7 @@ src/linkedin_optimizer/
 │   ├── headline.py  about.py  experience.py  skills.py  keywords.py  completeness.py
 ├── engine.py       # تشغيل القواعد، الدرجة النهائية، ترتيب الإجراءات
 ├── report.py       # عرض النتيجة: نص ملوّن / JSON / Markdown
+├── pdf.py          # تصدير التقرير PDF (اختياري: ReportLab)
 ├── cli.py          # واجهة سطر الأوامر
 ├── api.py          # واجهة FastAPI + تقديم صفحة الويب
 └── static/         # واجهة الويب: index.html, styles.css, app.js, favicon.svg
@@ -241,7 +265,7 @@ class VolunteeringRule(Rule):
 <div dir="ltr">
 
 ```bash
-pytest          # 163 اختبارًا
+pytest          # 193 اختبارًا
 ruff check .
 ```
 

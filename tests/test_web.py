@@ -96,3 +96,13 @@ def test_the_script_posts_the_archive_to_the_import_endpoint() -> None:
     script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
     assert 'fetch("/import"' in script
     assert "FormData" in script
+
+
+def test_the_page_offers_a_pdf_download(client: TestClient) -> None:
+    assert 'id="download-pdf"' in client.get("/").text
+
+
+def test_the_script_requests_the_pdf_endpoint() -> None:
+    script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
+    assert 'fetch("/report.pdf"' in script
+    assert "URL.createObjectURL" in script
