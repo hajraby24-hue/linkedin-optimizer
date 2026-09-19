@@ -16,6 +16,15 @@
   <main>
     <form class="panel" id="profile-form" novalidate>
       <fieldset>
+        <legend>استيراد من LinkedIn</legend>
+        <label>
+          <span>ملف التصدير (.zip) من Settings → Data privacy → Get a copy of your data</span>
+          <input type="file" id="export-file" accept=".zip,application/zip" />
+        </label>
+        <p class="hint" id="import-status">يملأ النموذج تلقائيًا. الصورة والغلاف والرابط المخصّص غير موجودة في التصدير، فاضبطها بنفسك بعد الاستيراد.</p>
+      </fieldset>
+
+      <fieldset>
         <legend>الأساسيات</legend>
         <label>
           <span>الاسم الكامل</span>

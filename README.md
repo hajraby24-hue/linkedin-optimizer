@@ -35,6 +35,29 @@ pip install -e ".[dev]"      # أو: pip install -e .  للنواة فقط بل�
 
 يتطلّب Python 3.10 أو أحدث. نواة الأداة بلا أي اعتماديات خارجية؛ الحزمة الاختيارية `api` تضيف FastAPI و uvicorn فقط.
 
+## الاستيراد من تصدير LinkedIn
+
+بدل تعبئة البيانات يدويًا، نزّل أرشيف حسابك من LinkedIn: **Settings → Data privacy → Get a copy of your data**، ثم:
+
+<div dir="ltr">
+
+```bash
+linkedin-optimizer import Basic_LinkedInDataExport.zip -o profile.json
+linkedin-optimizer analyze profile.json
+
+# أو حلّل الأرشيف مباشرة دون خطوة وسيطة
+linkedin-optimizer analyze Basic_LinkedInDataExport.zip
+linkedin-optimizer analyze ./extracted-export/        # مجلّد CSV مفكوك
+```
+
+</div>
+
+يقرأ المستورد: `Profile.csv` (الاسم، العنوان، النبذة، الموقع، المجال)، `Positions.csv`، `Education.csv`، `Skills.csv`، `Certifications.csv`، `Languages.csv`، `Connections.csv` (العدد)، و`Recommendations_Received.csv` (المرئية منها فقط). كل ملف اختياري، والمطابقة غير حسّاسة لحالة الأحرف، والأعمدة غير المعروفة تُتجاهل بدل أن تُفشل القراءة.
+
+**ما لا يوجد في التصدير:** الصورة الشخصية، الغلاف، قسم Featured، الرابط المخصّص، والدور المستهدف. لا يخمّنها المستورد بل يتركها فارغة ويطبع ملاحظة بذلك — حتى لا تُنفَخ الدرجة بافتراض. اضبطها بنفسك بعد الاستيراد.
+
+يمكن أيضًا رفع الأرشيف مباشرة من واجهة الويب (حقل «استيراد من LinkedIn» أعلى النموذج) أو عبر `POST /import`.
+
 ## الاستخدام من سطر الأوامر
 
 <div dir="ltr">
@@ -114,6 +137,7 @@ uvicorn linkedin_optimizer.api:app --reload
 | المسار | الطريقة | الوصف |
 | --- | --- | --- |
 | `/` | GET | واجهة الويب |
+| `/import` | POST | رفع أرشيف التصدير (multipart) وإرجاع بيانات الملف |
 | `/health` | GET | حالة الخدمة ورقم الإصدار |
 | `/rules` | GET | قائمة القواعد وأوزانها |
 | `/analyze` | POST | تحليل ملف شخصي وإرجاع التقرير |
@@ -176,6 +200,7 @@ curl -s localhost:8000/analyze \
 ```
 src/linkedin_optimizer/
 ├── models.py       # Profile / Experience / Education + التحقق من المدخلات
+├── linkedin_export.py  # قراءة أرشيف التصدير (ZIP أو مجلّد CSV)
 ├── text.py         # أدوات نصية: الترميز، الأفعال، الأرقام، الكلمات المفتاحية للأدوار
 ├── rules/          # كل قاعدة في ملف مستقل، ترث من Rule
 │   ├── base.py     # Rule / RuleResult / Finding
@@ -216,7 +241,7 @@ class VolunteeringRule(Rule):
 <div dir="ltr">
 
 ```bash
-pytest          # 118 اختبارًا
+pytest          # 163 اختبارًا
 ruff check .
 ```
 

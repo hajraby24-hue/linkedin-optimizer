@@ -71,3 +71,59 @@ def test_markdown_is_opt_in(client: TestClient, weak_profile_data: dict) -> None
 )
 def test_malformed_requests_are_rejected(client: TestClient, body: dict) -> None:
     assert client.post("/analyze", json=body).status_code == 422
+
+
+class TestImportEndpoint:
+    """POST /import: the browser hands up the archive, gets a profile back."""
+
+    @staticmethod
+    def _zip_bytes() -> bytes:
+        import io
+        import zipfile
+
+        from test_linkedin_export import FULL_EXPORT
+
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w") as archive:
+            for name, content in FULL_EXPORT.items():
+                archive.writestr(name, content)
+        return buffer.getvalue()
+
+    def test_an_export_becomes_a_profile(self, client: TestClient) -> None:
+        response = client.post(
+            "/import", files={"file": ("export.zip", self._zip_bytes(), "application/zip")}
+        )
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["profile"]["full_name"] == "Layla Haddad"
+        assert payload["profile"]["connections_count"] == 3
+        assert payload["notes"]
+        assert "Profile.csv" in payload["files_read"]
+
+    def test_the_result_feeds_straight_into_analyze(self, client: TestClient) -> None:
+        profile = client.post(
+            "/import", files={"file": ("export.zip", self._zip_bytes(), "application/zip")}
+        ).json()["profile"]
+        response = client.post("/analyze", json={"profile": profile})
+        assert response.status_code == 200
+        assert response.json()["profile_name"] == "Layla Haddad"
+
+    def test_a_file_that_is_not_a_zip_is_rejected(self, client: TestClient) -> None:
+        response = client.post("/import", files={"file": ("notes.txt", b"hello", "text/plain")})
+        assert response.status_code == 422
+        assert "ZIP" in response.json()["detail"]
+
+    def test_the_error_names_the_upload_not_a_server_path(self, client: TestClient) -> None:
+        """A server-side temp path must never reach the browser."""
+        detail = client.post(
+            "/import", files={"file": ("notes.txt", b"hello", "text/plain")}
+        ).json()["detail"]
+        assert "notes.txt" in detail
+        assert "/tmp" not in detail and "export.zip" not in detail
+
+    def test_an_empty_upload_is_rejected(self, client: TestClient) -> None:
+        response = client.post("/import", files={"file": ("empty.zip", b"", "application/zip")})
+        assert response.status_code == 422
+
+    def test_a_missing_file_field_is_rejected(self, client: TestClient) -> None:
+        assert client.post("/import").status_code == 422
