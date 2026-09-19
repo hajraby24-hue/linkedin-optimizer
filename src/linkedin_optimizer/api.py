@@ -6,19 +6,24 @@ The form is then served at / and the OpenAPI docs at /docs.
 
 from __future__ import annotations
 
+import tempfile
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import __version__
 from .engine import analyze
+from .linkedin_export import load_export
 from .models import Profile, ProfileError
 from .report import render_markdown
 from .rules import DEFAULT_RULES
+
+#: A LinkedIn export is a few megabytes at most; refuse anything absurd.
+MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -96,6 +101,33 @@ def list_rules() -> dict[str, Any]:
             for rule in DEFAULT_RULES
         ],
     }
+
+
+@app.post("/import", tags=["analysis"])
+async def import_export(file: Annotated[UploadFile, File()]) -> dict[str, Any]:
+    """Turn an uploaded LinkedIn data export (.zip) into a profile payload.
+
+    The response feeds straight back into POST /analyze, so the browser can fill
+    the form from the archive and let the user correct it before scoring.
+    """
+    payload = await file.read(MAX_UPLOAD_BYTES + 1)
+    if len(payload) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail=f"The upload exceeds {MAX_UPLOAD_BYTES} bytes.")
+    if not payload:
+        raise HTTPException(status_code=422, detail="The uploaded file is empty.")
+
+    with tempfile.TemporaryDirectory() as directory:
+        archive = Path(directory) / "export.zip"
+        archive.write_bytes(payload)
+        try:
+            result = load_export(archive)
+        except ProfileError as error:
+            # The parser names the path it was given; that path is a server-side
+            # temporary file, so report it back as the name the client sent.
+            detail = str(error).replace(str(archive), file.filename or "the uploaded file")
+            raise HTTPException(status_code=422, detail=detail) from error
+
+    return result.to_dict()
 
 
 @app.post("/analyze", tags=["analysis"])

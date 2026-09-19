@@ -84,3 +84,15 @@ def test_the_bundled_files_are_plain_local_assets() -> None:
 
 def test_no_unexpected_files_in_the_static_directory() -> None:
     assert all(path.suffix in {".html", ".css", ".js", ".svg"} for path in Path(STATIC_DIR).iterdir())
+
+
+def test_the_page_offers_the_export_upload(client: TestClient) -> None:
+    page = client.get("/").text
+    assert 'id="export-file"' in page
+    assert 'accept=".zip,application/zip"' in page
+
+
+def test_the_script_posts_the_archive_to_the_import_endpoint() -> None:
+    script = (STATIC_DIR / "app.js").read_text(encoding="utf-8")
+    assert 'fetch("/import"' in script
+    assert "FormData" in script

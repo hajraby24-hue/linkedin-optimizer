@@ -9,6 +9,8 @@
   var submitButton = document.getElementById("submit-button");
   var experiencesHost = document.getElementById("experiences");
   var educationsHost = document.getElementById("educations");
+  var exportInput = document.getElementById("export-file");
+  var importStatus = document.getElementById("import-status");
 
   var SEVERITY_LABEL = {
     critical: "حرج",
@@ -281,6 +283,65 @@
     reportPanel.textContent = "";
     reportPanel.appendChild(el("p", "error", message));
   }
+
+  /* ---------- importing a LinkedIn export ---------- */
+
+  var TEXT_FIELDS = [
+    "full_name", "headline", "about", "location", "industry", "custom_url", "target_role",
+  ];
+  var LIST_FIELDS = ["skills", "certifications", "languages", "target_keywords"];
+  var NUMBER_FIELDS = ["connections_count", "recommendations_count", "featured_count"];
+
+  function fillForm(profile) {
+    TEXT_FIELDS.forEach(function (name) {
+      if (form.elements[name]) form.elements[name].value = profile[name] || "";
+    });
+    LIST_FIELDS.forEach(function (name) {
+      if (form.elements[name]) form.elements[name].value = (profile[name] || []).join(", ");
+    });
+    NUMBER_FIELDS.forEach(function (name) {
+      if (form.elements[name]) form.elements[name].value = profile[name] || 0;
+    });
+    ["has_photo", "has_banner"].forEach(function (name) {
+      if (form.elements[name]) form.elements[name].checked = Boolean(profile[name]);
+    });
+
+    experiencesHost.textContent = "";
+    educationsHost.textContent = "";
+    (profile.experiences || []).forEach(addExperience);
+    (profile.educations || []).forEach(addEducation);
+    if (!experiencesHost.children.length) addExperience();
+    if (!educationsHost.children.length) addEducation();
+    updateCounters();
+  }
+
+  function importExport(file) {
+    var data = new FormData();
+    data.append("file", file);
+    importStatus.textContent = "جارٍ قراءة " + file.name + " …";
+    importStatus.className = "hint";
+
+    fetch("/import", { method: "POST", body: data })
+      .then(function (response) {
+        return response.json().then(function (payload) {
+          if (!response.ok) throw new Error(payload.detail || "الحالة " + response.status);
+          return payload;
+        });
+      })
+      .then(function (payload) {
+        fillForm(payload.profile);
+        importStatus.textContent =
+          "تمت قراءة " + payload.files_read.join("، ") + ". راجع الحقول ثم اضغط «حلّل الملف».";
+      })
+      .catch(function (error) {
+        importStatus.textContent = "تعذّر الاستيراد: " + error.message;
+        importStatus.className = "error";
+      });
+  }
+
+  exportInput.addEventListener("change", function () {
+    if (exportInput.files && exportInput.files[0]) importExport(exportInput.files[0]);
+  });
 
   /* ---------- wiring ---------- */
 

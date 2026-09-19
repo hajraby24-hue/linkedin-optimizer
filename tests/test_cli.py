@@ -108,3 +108,59 @@ def test_rules_lists_every_rule_with_its_weight() -> None:
 def test_a_missing_subcommand_is_rejected() -> None:
     with pytest.raises(SystemExit):
         run()
+
+
+class TestImportCommand:
+    """`linkedin-optimizer import` and `analyze` on a LinkedIn export."""
+
+    @staticmethod
+    def _export(tmp_path: Path) -> str:
+        from test_linkedin_export import FULL_EXPORT, write_zip
+
+        return str(write_zip(tmp_path / "export.zip", FULL_EXPORT))
+
+    def test_import_writes_a_profile_json(self, tmp_path: Path) -> None:
+        destination = tmp_path / "imported.json"
+        status, output = run("import", self._export(tmp_path), "-o", str(destination))
+        assert status == EXIT_OK
+        assert "Imported 2 position(s)" in output
+        assert "note:" in output
+        profile = json.loads(destination.read_text(encoding="utf-8"))
+        assert profile["full_name"] == "Layla Haddad"
+        assert profile["connections_count"] == 3
+
+    def test_import_refuses_to_overwrite_without_force(self, tmp_path: Path) -> None:
+        destination = tmp_path / "imported.json"
+        export = self._export(tmp_path)
+        assert run("import", export, "-o", str(destination))[0] == EXIT_OK
+        assert run("import", export, "-o", str(destination))[0] == EXIT_BAD_INPUT
+        assert run("import", export, "-o", str(destination), "--force")[0] == EXIT_OK
+
+    def test_the_imported_file_analyzes(self, tmp_path: Path) -> None:
+        destination = tmp_path / "imported.json"
+        run("import", self._export(tmp_path), "-o", str(destination))
+        status, output = run("analyze", str(destination), "--format", "json")
+        assert status == EXIT_OK
+        assert json.loads(output)["profile_name"] == "Layla Haddad"
+
+    def test_analyze_accepts_an_export_archive_directly(self, tmp_path: Path) -> None:
+        status, output = run("analyze", self._export(tmp_path), "--format", "json")
+        assert status == EXIT_OK
+        assert json.loads(output)["profile_name"] == "Layla Haddad"
+
+    def test_analyze_accepts_a_folder_of_csvs(self, tmp_path: Path) -> None:
+        from test_linkedin_export import FULL_EXPORT
+
+        folder = tmp_path / "extracted"
+        folder.mkdir()
+        for name, content in FULL_EXPORT.items():
+            (folder / name).write_text(content, encoding="utf-8")
+        status, output = run("analyze", str(folder), "--format", "json")
+        assert status == EXIT_OK
+        assert json.loads(output)["score"] > 0
+
+    def test_a_broken_export_is_a_clean_error(self, tmp_path: Path) -> None:
+        broken = tmp_path / "broken.zip"
+        broken.write_bytes(b"not a zip")
+        assert run("import", str(broken))[0] == EXIT_BAD_INPUT
+        assert run("analyze", str(broken))[0] == EXIT_BAD_INPUT

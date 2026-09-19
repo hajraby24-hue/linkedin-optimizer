@@ -11,6 +11,7 @@ from typing import TextIO
 
 from . import __version__
 from .engine import analyze
+from .linkedin_export import load_export
 from .models import Profile, ProfileError
 from .report import render_json, render_markdown, render_text
 from .templates import BLANK_PROFILE
@@ -37,7 +38,8 @@ def build_parser() -> argparse.ArgumentParser:
     analyze_parser = subparsers.add_parser("analyze", help="analyze a profile JSON file")
     analyze_parser.add_argument(
         "profile",
-        help="path to the profile JSON file, or '-' to read it from stdin",
+        help="path to the profile JSON file, a LinkedIn export (.zip or folder), "
+        "or '-' to read JSON from stdin",
     )
     analyze_parser.add_argument(
         "-f", "--format", choices=sorted(RENDERERS), default="text", help="output format (default: text)"
@@ -62,6 +64,20 @@ def build_parser() -> argparse.ArgumentParser:
     )
     analyze_parser.add_argument("--no-color", action="store_true", help="disable ANSI colors")
 
+    import_parser = subparsers.add_parser(
+        "import",
+        help="convert a LinkedIn data export into a profile JSON file",
+    )
+    import_parser.add_argument(
+        "export",
+        help="the ZIP downloaded from LinkedIn (Settings -> Data privacy -> Get a copy of your "
+        "data), or a folder of the extracted CSVs",
+    )
+    import_parser.add_argument(
+        "-o", "--output", default="profile.json", help="file to write (default: profile.json)"
+    )
+    import_parser.add_argument("--force", action="store_true", help="overwrite the file if it exists")
+
     init_parser = subparsers.add_parser("init", help="write a blank profile template")
     init_parser.add_argument(
         "path", nargs="?", default="profile.json", help="file to create (default: profile.json)"
@@ -72,9 +88,20 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _load_profile(source: str, stdin: TextIO) -> Profile:
+def _looks_like_export(source: str) -> bool:
+    """True for a LinkedIn archive: a folder, or a .zip that is not JSON."""
+    path = Path(source)
+    return path.is_dir() or path.suffix.lower() == ".zip"
+
+
+def _load_profile(source: str, stdin: TextIO, stderr: TextIO | None = None) -> Profile:
     if source == "-":
         return Profile.from_json(stdin.read())
+    if _looks_like_export(source):
+        result = load_export(source)
+        for note in result.notes:
+            print(f"note: {note}", file=stderr or sys.stderr)
+        return result.profile
     return Profile.from_file(source)
 
 
@@ -101,6 +128,30 @@ def _command_analyze(args: argparse.Namespace, stdout: TextIO, stdin: TextIO) ->
             file=sys.stderr,
         )
         return EXIT_BELOW_THRESHOLD
+    return EXIT_OK
+
+
+def _command_import(args: argparse.Namespace, stdout: TextIO) -> int:
+    path = Path(args.output)
+    if path.exists() and not args.force:
+        print(f"{path} already exists; pass --force to overwrite it.", file=sys.stderr)
+        return EXIT_BAD_INPUT
+
+    result = load_export(args.export)
+    path.write_text(
+        json.dumps(result.profile.to_dict(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+
+    profile = result.profile
+    print(f"Read {', '.join(result.files_read)} from {args.export}", file=stdout)
+    print(
+        f"Imported {len(profile.experiences)} position(s), {len(profile.educations)} education "
+        f"entr(ies), {len(profile.skills)} skill(s), {profile.connections_count} connection(s).",
+        file=stdout,
+    )
+    for note in result.notes:
+        print(f"note: {note}", file=stdout)
+    print(f"Wrote {path}. Review it, then run: linkedin-optimizer analyze {path}", file=stdout)
     return EXIT_OK
 
 
@@ -138,6 +189,8 @@ def main(
     try:
         if args.command == "analyze":
             return _command_analyze(args, out, inp)
+        if args.command == "import":
+            return _command_import(args, out)
         if args.command == "init":
             return _command_init(args, out)
         if args.command == "rules":
