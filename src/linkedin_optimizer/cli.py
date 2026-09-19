@@ -13,6 +13,7 @@ from . import __version__
 from .engine import analyze
 from .linkedin_export import load_export
 from .models import Profile, ProfileError
+from .pdf import PdfUnavailable, write_pdf
 from .report import render_json, render_markdown, render_text
 from .templates import BLANK_PROFILE
 
@@ -25,6 +26,8 @@ RENDERERS = {
     "json": lambda report, color: render_json(report),
     "markdown": lambda report, color: render_markdown(report),
 }
+#: Formats that produce bytes rather than text, so they need --output.
+BINARY_FORMATS = ("pdf",)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -42,7 +45,11 @@ def build_parser() -> argparse.ArgumentParser:
         "or '-' to read JSON from stdin",
     )
     analyze_parser.add_argument(
-        "-f", "--format", choices=sorted(RENDERERS), default="text", help="output format (default: text)"
+        "-f",
+        "--format",
+        choices=sorted((*RENDERERS, *BINARY_FORMATS)),
+        default="text",
+        help="output format (default: text); pdf requires --output",
     )
     analyze_parser.add_argument("-o", "--output", help="write the report to this file instead of stdout")
     analyze_parser.add_argument("--target-role", help="override the target role from the file")
@@ -113,6 +120,18 @@ def _command_analyze(args: argparse.Namespace, stdout: TextIO, stdin: TextIO) ->
         profile.target_keywords = args.target_keywords
 
     report = analyze(profile, max_actions=args.max_actions)
+
+    if args.format in BINARY_FORMATS:
+        if not args.output:
+            print(f"error: --format {args.format} writes binary data, so --output is required.", file=sys.stderr)
+            return EXIT_BAD_INPUT
+        write_pdf(report, args.output)
+        print(f"Report written to {args.output} (score {report.score:.1f}/100)", file=stdout)
+        if args.fail_under is not None and report.score < args.fail_under:
+            print(f"Score {report.score:.1f} is below the required {args.fail_under:.1f}.", file=sys.stderr)
+            return EXIT_BELOW_THRESHOLD
+        return EXIT_OK
+
     color = not args.no_color and getattr(stdout, "isatty", lambda: False)()
     rendered = RENDERERS[args.format](report, color)
 
@@ -196,6 +215,9 @@ def main(
         if args.command == "rules":
             return _command_rules(out)
     except ProfileError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return EXIT_BAD_INPUT
+    except PdfUnavailable as error:
         print(f"error: {error}", file=sys.stderr)
         return EXIT_BAD_INPUT
     except OSError as error:

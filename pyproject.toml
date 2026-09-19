@@ -19,6 +19,7 @@ dependencies = []
 
 [project.optional-dependencies]
 api = ["fastapi>=0.110", "uvicorn[standard]>=0.27", "python-multipart>=0.0.9"]
+pdf = ["reportlab>=4.0", "arabic-reshaper>=3.0", "python-bidi>=0.4"]
 dev = [
     "pytest>=8.0",
     "httpx>=0.27",
@@ -26,6 +27,10 @@ dev = [
     "fastapi>=0.110",
     "uvicorn[standard]>=0.27",
     "python-multipart>=0.0.9",
+    "reportlab>=4.0",
+    "arabic-reshaper>=3.0",
+    "python-bidi>=0.4",
+    "pypdf>=4.0",
 ]
 
 [project.scripts]

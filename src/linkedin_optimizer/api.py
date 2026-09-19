@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -19,6 +19,7 @@ from . import __version__
 from .engine import analyze
 from .linkedin_export import load_export
 from .models import Profile, ProfileError
+from .pdf import PdfUnavailable, render_pdf
 from .report import render_markdown
 from .rules import DEFAULT_RULES
 
@@ -101,6 +102,26 @@ def list_rules() -> dict[str, Any]:
             for rule in DEFAULT_RULES
         ],
     }
+
+
+@app.post("/report.pdf", tags=["analysis"], response_class=Response)
+def analyze_to_pdf(request: AnalyzeRequest) -> Response:
+    """The same analysis as /analyze, returned as a PDF attachment."""
+    profile = Profile.from_dict(request.profile.model_dump())
+    report = analyze(profile, max_actions=request.max_actions)
+    try:
+        payload = render_pdf(report)
+    except PdfUnavailable as error:
+        raise HTTPException(status_code=501, detail=str(error)) from error
+
+    stem = "".join(
+        char for char in (profile.full_name or "linkedin-profile") if char.isalnum() or char in " -_"
+    ).strip().replace(" ", "-").lower() or "linkedin-profile"
+    return Response(
+        content=payload,
+        media_type="application/pdf",
+        headers={"content-disposition": f'attachment; filename="{stem}-report.pdf"'},
+    )
 
 
 @app.post("/import", tags=["analysis"])

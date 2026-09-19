@@ -127,3 +127,25 @@ class TestImportEndpoint:
 
     def test_a_missing_file_field_is_rejected(self, client: TestClient) -> None:
         assert client.post("/import").status_code == 422
+
+
+class TestPdfEndpoint:
+    def test_a_pdf_is_returned_as_an_attachment(self, client: TestClient, weak_profile_data: dict) -> None:
+        pytest.importorskip("reportlab")
+        response = client.post("/report.pdf", json={"profile": weak_profile_data})
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "application/pdf"
+        assert response.headers["content-disposition"] == 'attachment; filename="omar-nasser-report.pdf"'
+        assert response.content.startswith(b"%PDF-")
+
+    def test_a_nameless_profile_gets_a_default_filename(self, client: TestClient) -> None:
+        pytest.importorskip("reportlab")
+        response = client.post("/report.pdf", json={"profile": {}})
+        assert response.headers["content-disposition"] == 'attachment; filename="linkedin-profile-report.pdf"'
+
+    def test_the_filename_strips_characters_that_do_not_belong_in_one(self, client: TestClient) -> None:
+        pytest.importorskip("reportlab")
+        response = client.post("/report.pdf", json={"profile": {"full_name": 'A/B "C" <d>'}})
+        disposition = response.headers["content-disposition"]
+        assert "/" not in disposition.split("filename=")[1]
+        assert '"' not in disposition.split("filename=")[1].strip('"')

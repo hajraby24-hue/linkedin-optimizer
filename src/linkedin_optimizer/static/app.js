@@ -10,6 +10,7 @@
   var experiencesHost = document.getElementById("experiences");
   var educationsHost = document.getElementById("educations");
   var exportInput = document.getElementById("export-file");
+  var pdfButton = document.getElementById("download-pdf");
   var importStatus = document.getElementById("import-status");
 
   var SEVERITY_LABEL = {
@@ -386,6 +387,35 @@
     EXAMPLE.experiences.forEach(addExperience);
     EXAMPLE.educations.forEach(addEducation);
     updateCounters();
+  });
+
+  pdfButton.addEventListener("click", function () {
+    pdfButton.disabled = true;
+    fetch("/report.pdf", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ profile: buildProfile(), max_actions: 5 }),
+    })
+      .then(function (response) {
+        if (!response.ok) throw new Error("الخادم ردّ بالحالة " + response.status);
+        return response.blob();
+      })
+      .then(function (blob) {
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement("a");
+        link.href = url;
+        link.download = (form.elements.full_name.value.trim() || "linkedin-profile") + " - report.pdf";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      })
+      .catch(function (error) {
+        renderError("تعذّر إنشاء PDF: " + error.message);
+      })
+      .finally(function () {
+        pdfButton.disabled = false;
+      });
   });
 
   document.getElementById("reset-form").addEventListener("click", function () {

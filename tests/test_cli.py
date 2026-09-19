@@ -164,3 +164,24 @@ class TestImportCommand:
         broken.write_bytes(b"not a zip")
         assert run("import", str(broken))[0] == EXIT_BAD_INPUT
         assert run("analyze", str(broken))[0] == EXIT_BAD_INPUT
+
+
+class TestPdfOutput:
+    def test_analyze_writes_a_pdf(self, tmp_path: Path) -> None:
+        pytest.importorskip("reportlab")
+        destination = tmp_path / "report.pdf"
+        status, output = run("analyze", WEAK, "--format", "pdf", "-o", str(destination))
+        assert status == EXIT_OK
+        assert "Report written to" in output
+        assert destination.read_bytes().startswith(b"%PDF-")
+
+    def test_pdf_without_output_is_rejected(self) -> None:
+        status, _ = run("analyze", WEAK, "--format", "pdf")
+        assert status == EXIT_BAD_INPUT
+
+    def test_fail_under_still_applies_to_pdf_output(self, tmp_path: Path) -> None:
+        pytest.importorskip("reportlab")
+        destination = tmp_path / "report.pdf"
+        status, _ = run("analyze", WEAK, "--format", "pdf", "-o", str(destination), "--fail-under", "70")
+        assert status == EXIT_BELOW_THRESHOLD
+        assert destination.exists()  # the report is still written
